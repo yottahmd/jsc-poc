@@ -22,7 +22,20 @@ Details: See `docs/requirements.md`, `docs/high-level-design.md`, and `docs/deta
 - Network: JSC Kaigan testnet
   - chainId: `5278000`
   - native gas token: `JETH`
-- Stablecoin: `MJPY` on Kaigan — `0x115e91ef61ae86FbECa4b5637FD79C806c331632`
+- Stablecoin (Kaigan only): `MJPY` — `0x115e91ef61ae86FbECa4b5637FD79C806c331632` (Explorer: https://testnet.routescan.io/address/0x115e91ef61ae86FbECa4b5637FD79C806c331632)
+- Mizuhiki SBT (Kaigan only): `0x606F72657e72cd1218444C69eF9D366c62C54978` (Explorer: https://testnet.routescan.io/address/0x606F72657e72cd1218444C69eF9D366c62C54978)
+
+---
+
+## Known Kaigan Addresses
+
+| Component | Address | Explorer |
+|---|---|---|
+| Mizuhiki Verified SBT | `0x606F72657e72cd1218444C69eF9D366c62C54978` | https://testnet.routescan.io/address/0x606F72657e72cd1218444C69eF9D366c62C54978 |
+| MJPY ERC20 | `0x115e91ef61ae86FbECa4b5637FD79C806c331632` | https://testnet.routescan.io/address/0x115e91ef61ae86FbECa4b5637FD79C806c331632 |
+| PrivacyPool (this repo) | To be filled after deploy | — |
+| Verifier (Groth16) | To be filled after deploy | — |
+| SmartAccount (example) | To be filled after deploy | — |
 
 ---
 
@@ -31,8 +44,9 @@ Details: See `docs/requirements.md`, `docs/high-level-design.md`, and `docs/deta
 - `contracts/SmartAccount.sol` — Minimal SCA with EIP‑712 execute and nonce.
 - `contracts/PrivacyPool.sol` — SBT‑gated pool with fixed denominations, nullifier set, and ZK verification hook.
 - `contracts/IVerifierGroth16.sol` — Verifier interface expected by the pool.
-- `contracts/CompliantERC20.sol` — Sample ERC20 (for workshop/fallback).
-- `scripts/*.ts` — Deployment and helper scripts (SCA, PrivacyPool, root publishing, ERC20 workshop scripts).
+- `scripts/deploy-smart-account.ts` — Deploys a SmartAccount with a specified owner.
+- `scripts/deploy-privacy-pool.ts` — Deploys the PrivacyPool wired to MJPY, SBT, and a verifier.
+- `scripts/publish-root.ts` — Publishes a new association root to the pool.
 - `docs/*.md` — Requirements, high‑level design, detailed design with Mermaid sequences.
 
 ---
@@ -63,18 +77,33 @@ JSC_RPC_KEY=YOUR_JSC_RPC_ENDPOINT_OR_TOKEN
 # If token is provided, Hardhat constructs:
 #   https://rpc.kaigan.jsc.dev/rpc?token=${JSC_RPC_KEY}
 
-# Mizuhiki SBT on Kaigan
-SBT_CONTRACT_ADDRESS=0xYourMizuhikiSbt
+# Mizuhiki SBT on Kaigan (only works on Kaigan)
+SBT_CONTRACT_ADDRESS=0x606F72657e72cd1218444C69eF9D366c62C54978
 
 # Optional defaults for deploy utilities
 OWNER_ADDRESS=0xOwner
-ERC20_TOKEN_ADDRESS=0x115e91ef61ae86FbECa4b5637FD79C806c331632 # MJPY
+ERC20_TOKEN_ADDRESS=0x115e91ef61ae86FbECa4b5637FD79C806c331632 # MJPY (Kaigan only)
 VERIFIER_ADDRESS=0xVerifier # must implement IVerifierGroth16
 DENOMS_UNITS=1,10,100
 ERC20_DECIMALS=18
 INCLUSION_DELAY_BLOCKS=20
 PRIVACY_POOL_ADDRESS=0xPool
 ```
+
+### Environment Variables Reference
+
+| Variable | Required | Default | Description | Example |
+|---|---|---|---|---|
+| `PRIVATE_KEY` | Yes | — | Deployer private key for Kaigan; must have JETH for gas. | `0xabc...` |
+| `JSC_RPC_KEY` | Yes | — | Kaigan RPC URL or token. If a token is provided, Hardhat expands it to `https://rpc.kaigan.jsc.dev/rpc?token=${JSC_RPC_KEY}`. | `https://rpc.kaigan.jsc.dev/rpc?token=...` or `your_token` |
+| `SBT_CONTRACT_ADDRESS` | Yes | — | Mizuhiki Verified SBT on Kaigan (gates pool access). | `0x606F72657e72cd1218444C69eF9D366c62C54978` |
+| `ERC20_TOKEN_ADDRESS` | Yes | MJPY | ERC20 used by the pool. On Kaigan, MJPY address. | `0x115e91ef61ae86FbECa4b5637FD79C806c331632` |
+| `VERIFIER_ADDRESS` | Yes | — | Address of the on-chain ZK verifier implementing `IVerifierGroth16`. | `0xVerifier...` |
+| `OWNER_ADDRESS` | No | Deployer | Owner for SmartAccount/PrivacyPool deployments. | `0xOwner...` |
+| `DENOMS_UNITS` | No | `1,10,100` | Comma-separated denomination amounts in whole-token units. | `"1,10,100"` |
+| `ERC20_DECIMALS` | No | `18` | ERC20 decimals for denomination parsing. | `18` |
+| `INCLUSION_DELAY_BLOCKS` | No | `20` | Blocks to wait after root publication before withdrawals using that root are eligible. | `20` |
+| `PRIVACY_POOL_ADDRESS` | No | — | Deployed pool address used by `publish-root` script. | `0xPool...` |
 
 ---
 
@@ -86,7 +115,7 @@ npm run compile
 
 ---
 
-## Deploy: SmartAccount and PrivacyPool
+## Deploy: SmartAccount and PrivacyPool (Kaigan)
 
 Compile first, then deploy.
 
@@ -94,56 +123,19 @@ Compile first, then deploy.
 # Deploy SmartAccount (SCA). Owner defaults to deployer.
 OWNER_ADDRESS=0xYourOwner npm run deploy:sca:kaigan
 
-# Option A) Deploy a mock verifier for Demo Mode
-npm run deploy:verifier:kaigan
-
 # Deploy PrivacyPool using MJPY by default.
-# Required: SBT_CONTRACT_ADDRESS, VERIFIER_ADDRESS (use the mock address for demo)
+# Required: SBT_CONTRACT_ADDRESS, VERIFIER_ADDRESS
 SBT_CONTRACT_ADDRESS=0xSbt VERIFIER_ADDRESS=0xVerifier \
 DENOMS_UNITS="1,10,100" INCLUSION_DELAY_BLOCKS=20 \
 npm run deploy:pool:kaigan
 
-# Build a demo association root from Deposit events
-PRIVACY_POOL_ADDRESS=0xPool npm run build:root:kaigan
-
-# Or publish a specific root directly
+# Publish a specific root directly (computed off-chain)
 PRIVACY_POOL_ADDRESS=0xPool ROOT=0xYourRoot npm run publish:root:kaigan
 ```
 
 Notes:
 - The verifier must implement `IVerifierGroth16.verifyProof(bytes, uint256[]) → bool`.
 - For a quick demo without circuits, deploy a mock verifier that always returns true (not included here) and mark the build as “Demo Mode”.
-
----
-
-## CLI Demo (No Frontend)
-
-This repo ships contracts and deploy scripts. A minimal dApp is described in `docs`, but you can exercise the core flow from the Hardhat console.
-
-1) Deploy SCA and Pool (above) and fund the SCA with `MJPY`.
-2) From the Hardhat console, approve and deposit via SCA execute:
-
-```ts
-// npx hardhat console --network kaigan
-const [signer] = await ethers.getSigners();
-const sca = await ethers.getContractAt("SmartAccount", "0xYourSCA");
-const pool = await ethers.getContractAt("PrivacyPool", "0xYourPool");
-const mjpy = await ethers.getContractAt("IERC20", "0x115e91ef61ae86FbECa4b5637FD79C806c331632");
-
-// 1. Approve via SCA.execute (build calldata off-chain in a script in production)
-let data = mjpy.interface.encodeFunctionData("approve", [pool.target, ethers.parseUnits("1", 18)]);
-let req = { to: mjpy.target, value: 0n, data, nonce: (await sca.nonce()), chainId: (await ethers.provider.getNetwork()).chainId };
-// Sign EIP712 off-chain in a real client; here assume signer is owner and call execute directly for demo
-await sca.connect(signer).execute(req, "0x"); // For demo only if execute allows direct owner calls; otherwise pre-sign
-
-// 2. Deposit via SCA.execute
-const commitment = "0x"+"11".padEnd(64,"0");
-data = pool.interface.encodeFunctionData("deposit", [ethers.parseUnits("1", 18), commitment]);
-req = { to: pool.target, value: 0n, data, nonce: (await sca.nonce()), chainId: (await ethers.provider.getNetwork()).chainId };
-await sca.connect(signer).execute(req, "0x");
-```
-
-3) Publish a root and then withdraw similarly (requires verifier and proof inputs).
 
 ---
 
@@ -187,7 +179,6 @@ await sca.connect(signer).execute(req, "0x");
 
 ---
 
-## Supported Networks
+## Supported Network
 
-- `hardhat` (local dev)
 - `kaigan` (JSC Kaigan testnet — chainId `5278000`, native gas token `JETH`)
