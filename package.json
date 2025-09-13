@@ -7,8 +7,12 @@
   },
   "scripts": {
     "compile": "hardhat compile",
+    "zk:setup": "bash scripts/zk-setup.sh",
     "deploy:sca:kaigan": "hardhat run scripts/deploy-smart-account.ts --network kaigan",
     "deploy:pool:kaigan": "hardhat run scripts/deploy-privacy-pool.ts --network kaigan",
+    "deploy:verifier:simple:kaigan": "hardhat run scripts/deploy-simple-verifier.ts --network kaigan",
+    "deploy:verifier:standard:kaigan": "hardhat run scripts/deploy-standard-verifier.ts --network kaigan",
+    "deploy:verifier:adapter:kaigan": "hardhat run scripts/deploy-verifier-adapter.ts --network kaigan",
     "publish:root:kaigan": "hardhat run scripts/publish-root.ts --network kaigan"
   },
   "keywords": [],
@@ -20,8 +24,11 @@
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
+    "circom": "^0.5.46",
+    "circomlib": "^2.0.5",
     "eslint": "^9.35.0",
     "hardhat": "^2.26.1",
+    "snarkjs": "^0.7.5",
     "solhint": "^6.0.0",
     "solidity-coverage": "^0.8.16",
     "ts-node": "^10.9.2"

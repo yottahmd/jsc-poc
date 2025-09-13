@@ -140,6 +140,12 @@ contract PrivacyPool is Ownable, ReentrancyGuard {
             require(IERC721(sbt).balanceOf(recipient) > 0, "Pool: recipient lacks SBT");
         }
 
+        // Sanity-check expected signals against parameters
+        require(publicSignals.length >= 3, "Pool: bad signals");
+        require(bytes32(publicSignals[0]) == root, "Pool: root mismatch");
+        require(bytes32(publicSignals[1]) == nullifier, "Pool: nullifier mismatch");
+        require(publicSignals[2] == denomination, "Pool: denom mismatch");
+
         bool ok = verifier.verifyProof(proof, publicSignals);
         require(ok, "Pool: invalid proof");
 

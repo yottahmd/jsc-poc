@@ -5,13 +5,21 @@ import "dotenv/config";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.30",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
+    compilers: [
+      {
+        version: "0.8.30",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+        },
       },
-    },
+      // Support older pragma used by snarkjs Verifier.sol (e.g., ^0.6.11)
+      {
+        version: "0.6.11",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+        },
+      },
+    ],
   },
   networks: {
     hardhat: {
