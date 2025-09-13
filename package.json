@@ -8,11 +8,17 @@
   "scripts": {
     "compile": "hardhat compile",
     "zk:setup": "bash scripts/zk-setup.sh",
+    "zk:input": "node scripts/zk/generate-input.js",
+    "zk:prove": "node build/membership_js/generate_witness.js build/membership_js/membership.wasm build/input.json build/witness.wtns && snarkjs groth16 prove build/membership_final.zkey build/witness.wtns build/proof.json build/public.json",
+    "zk:encode": "node scripts/zk/encode-proof.js",
     "deploy:sca:kaigan": "hardhat run scripts/deploy-smart-account.ts --network kaigan",
     "deploy:pool:kaigan": "hardhat run scripts/deploy-privacy-pool.ts --network kaigan",
     "deploy:verifier:standard:kaigan": "hardhat run scripts/deploy-standard-verifier.ts --network kaigan",
     "deploy:verifier:adapter:kaigan": "hardhat run scripts/deploy-verifier-adapter.ts --network kaigan",
-    "publish:root:kaigan": "hardhat run scripts/publish-root.ts --network kaigan"
+    "publish:root:kaigan": "hardhat run scripts/publish-root.ts --network kaigan",
+    "deploy:demoerc20:kaigan": "hardhat run scripts/deploy-demo-erc20.ts --network kaigan",
+    "mint:demoerc20:kaigan": "hardhat run scripts/mint-demo-erc20.ts --network kaigan",
+    "deposit:demo:kaigan": "hardhat run scripts/deposit-demo.ts --network kaigan"
   },
   "keywords": [],
   "author": "",

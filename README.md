@@ -32,11 +32,53 @@ Details: See `docs/requirements.md`, `docs/high-level-design.md`, and `docs/deta
 |---|---|---|
 | Mizuhiki Verified SBT | `0x606F72657e72cd1218444C69eF9D366c62C54978` | https://testnet.routescan.io/address/0x606F72657e72cd1218444C69eF9D366c62C54978 |
 | MJPY ERC20 | `0x115e91ef61ae86FbECa4b5637FD79C806c331632` | https://testnet.routescan.io/address/0x115e91ef61ae86FbECa4b5637FD79C806c331632 |
-| PrivacyPool (this repo) | To be filled after deploy | — |
-| Verifier (Groth16) | To be filled after deploy | — |
-| SmartAccount (example) | To be filled after deploy | — |
+| Demo ERC20 | `0x98B7F42811f4Ce24eE1e85Ca8468D7b02FE58515` | https://testnet.routescan.io/address/0x98B7F42811f4Ce24eE1e85Ca8468D7b02FE58515|
+| PrivacyPool (this repo) | `0x63005393EAf676A34CBD8E51107bcaa07F0651e0` | https://testnet.routescan.io/address/0x63005393EAf676A34CBD8E51107bcaa07F0651e0 |
+| VerifierAdapter | `0x07eA6eAD5eA19267575cBb592b337cB440d3278D` | https://testnet.routescan.io/address/0x07eA6eAD5eA19267575cBb592b337cB440d3278D |
+| Verifier (Groth16) | `0x8996a763B3A33657F3f135D5Dd5c75D8C42F44cA` | https://testnet.routescan.io/address/0x8996a763B3A33657F3f135D5Dd5c75D8C42F44cA |
+| SmartAccount (example) | `0x4De514BF1169A2e7AAF303c39Eb258De15a63dac` | https://testnet.routescan.io/address/0x4De514BF1169A2e7AAF303c39Eb258De15a63dac |
 
 ---
+
+## Demo Token Option (when MJPY approvals are restricted)
+
+MJPY enforces compliance on spenders/receivers (spender must be SBT holder or a whitelisted DEX). If your pool isn’t whitelisted, `approve(owner→pool)` reverts. For end‑to‑end demos, use a demo ERC20 while keeping Mizuhiki SBT gating for compliance.
+
+Deploy demo token and mint to your EOA and/or SCA:
+
+```bash
+# Deploy a demo ERC20 (defaults to 1,000,000 units with 18 decimals)
+# You can override supply via DEMO_INITIAL (wei) or DEMO_INITIAL_UNITS + DECIMALS
+DEMO_INITIAL_UNITS=1000000 DECIMALS=18 npm run deploy:demoerc20:kaigan
+# Output: DemoERC20 deployed at: 0xYourDemo
+
+# Mint tokens (owner only). Uses ERC20_TOKEN_ADDRESS from env.
+# Option A: human units (recommended)
+ERC20_TOKEN_ADDRESS=0xYourDemo AMOUNT_UNITS=100 DECIMALS=18 npm run mint:demoerc20:kaigan
+# Option B: raw wei
+# ERC20_TOKEN_ADDRESS=0xYourDemo AMOUNT=100000000000000000000 npm run mint:demoerc20:kaigan
+```
+
+Then deploy the pool using the demo token (override ERC20_TOKEN_ADDRESS):
+
+```bash
+ERC20_TOKEN_ADDRESS=0xYourDemo \
+SBT_CONTRACT_ADDRESS=0x606F72657e72cd1218444C69eF9D366c62C54978 \
+VERIFIER_ADDRESS=0xYourAdapter \
+DENOMS_UNITS="1,10,100" INCLUSION_DELAY_BLOCKS=0 GATE_MODE=owner STRICT_RECIPIENT=0 \
+npm run deploy:pool:kaigan
+```
+
+Now approve/deposit/withdraw will succeed against the demo token without MJPY’s DEX/SBT spender restriction. The pool still enforces SBT gating at call‑time.
+
+Approve and deposit with one script (uses ERC20_TOKEN_ADDRESS). Use AMOUNT_UNITS to avoid wei math:
+```bash
+ERC20_TOKEN_ADDRESS=0xYourDemo POOL=0xYourPool AMOUNT_UNITS=1 DECIMALS=18 npm run deposit:demo:kaigan
+```
+
+Note on “huge numbers”: ERC‑20 tokens use decimals (commonly 18). On-chain amounts are in the smallest unit (“wei”).
+- 1 token with 18 decimals = 1,000,000,000,000,000,000 wei (1e18)
+- The scripts log both wei and human units to avoid confusion.
 
 ## Repository Structure
 
@@ -118,7 +160,7 @@ npm run compile
 
 ## ZK Verifier (Beginner Path)
 
-1) Generate Verifier.sol and keys with the helper script (runs circom + snarkjs with comments):
+1) Generate Verifier.sol and keys with the helper script (runs circom + snarkjs and explains each step):
 ```bash
 npm run zk:setup
 ```
@@ -160,6 +202,60 @@ PRIVACY_POOL_ADDRESS=0xPool ROOT=0xYourRoot npm run publish:root:kaigan
 Notes:
 - The pool expects a verifier with interface `IVerifierGroth16.verifyProof(bytes, uint256[]) → bool`.
 - Use the VerifierAdapter to wrap a standard Groth16 `Verifier` and pass `(a,b,c)` via ABI-encoded `proof`.
+
+---
+
+## End‑to‑End: Deposit → Proof → Publish → Withdraw (Kaigan)
+
+Assumes you deployed:
+- VerifierAdapter (use its address as VERIFIER_ADDRESS for the pool)
+- PrivacyPool (owner‑gating, STRICT_RECIPIENT=0). If you want instant testing, set `INCLUSION_DELAY_BLOCKS=0` when deploying.
+
+1) Approve + Deposit 1 MJPY to fund the pool
+```bash
+npx hardhat console --network kaigan
+```
+```js
+const pool = await ethers.getContractAt("PrivacyPool", "0xYourPool");
+const mjpy = await ethers.getContractAt("IERC20", "0x115e91ef61ae86FbECa4b5637FD79C806c331632");
+await mjpy.approve(pool.target, ethers.parseUnits("1", 18));
+const commitment = "0x" + "11".padEnd(64, "0");
+await pool.deposit(ethers.parseUnits("1", 18), commitment);
+```
+
+2) Create inputs, witness, and proof
+```bash
+npm run zk:input                      # writes build/input.json and input.meta.json
+npm run zk:prove                      # runs witness gen + proof → builds proof.json/public.json
+npm run zk:encode                     # writes proof.bytes and public.hex.json
+```
+
+3) Publish the root from public.hex.json and wait eligibility
+```bash
+export POOL=0xYourPool
+export ROOT=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("build/public.hex.json")).root)')
+PRIVACY_POOL_ADDRESS=$POOL ROOT=$ROOT npm run publish:root:kaigan
+```
+If your pool was deployed with `INCLUSION_DELAY_BLOCKS=20`, wait ~20 blocks before withdrawing. For instant testing, deploy with `INCLUSION_DELAY_BLOCKS=0`.
+
+4) Withdraw using the adapter
+```bash
+npx hardhat console --network kaigan
+```
+```js
+const fs = require("fs");
+const pool = await ethers.getContractAt("PrivacyPool", "0xYourPool");
+const denom = ethers.parseUnits("1", 18);
+const recipient = "0xRecipient";
+const j = JSON.parse(fs.readFileSync("build/public.hex.json", "utf8"));
+const proofBytes = fs.readFileSync("build/proof.bytes", "utf8");
+await pool.withdraw(denom, recipient, j.root, j.nullifier, proofBytes, j.pub);
+```
+
+Common pitfalls:
+- SBT gate: The EOA calling deposit/withdraw must hold Mizuhiki SBT (0x606F72657e72cd1218444C69eF9D366c62C54978).
+- Denomination: `denomIndex` in the proof must map to a configured on‑chain denomination (we used 1 MJPY for index 0).
+- Inclusion delay: If non‑zero, wait the required blocks after publishing the root.
 
 ---
 
