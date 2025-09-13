@@ -144,9 +144,6 @@ Compile first, then deploy.
 # Deploy SmartAccount (SCA). Owner defaults to deployer.
 OWNER_ADDRESS=0xYourOwner npm run deploy:sca:kaigan
 
-# Deploy Simple Membership Verifier (Demo Mode)
-npm run deploy:verifier:simple:kaigan
-
 # Deploy PrivacyPool using MJPY by default.
 # Required: SBT_CONTRACT_ADDRESS, VERIFIER_ADDRESS
 # Optional enforcement flags:
