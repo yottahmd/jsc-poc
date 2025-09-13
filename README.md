@@ -1,152 +1,193 @@
-# 🇯🇵 Japan Smart Chain Hardhat Starter Project
+# Mizuhiki SBT–Gated Privacy Pool (JSC Kaigan)
 
-> A minimal Hardhat project with ERC20 contracts  
-> for [Japan Smart Chain](https://japansmartchain.com)
+One‑sentence summary: A simple, compliant privacy pool on JSC Kaigan where only Mizuhiki‑verified users can privately deposit and withdraw MJPY via a Smart Contract Account.
+
+This project targets the ETHTokyo’25 Japan Smart Chain sponsor bounty. It demonstrates privacy and compliance together by gating all interactions with the Mizuhiki Verified SBT and using fixed‑denomination private withdrawals. Contracts compile and deploy on JSC Kaigan (chainId `5278000`, native gas token `JETH`).
 
 ---
 
-## 💻 Workshop Outline
+## How We Use Mizuhiki Verified SBT
 
-If you're here to code along with our live workshop, or following along at home, welcome! Here's what we're going to do:
+- Gate on‑chain access: Both `deposit` and `withdraw` require the caller to hold the Mizuhiki Verified SBT on JSC Kaigan.
+- Preferred mode: The SBT is held by the user’s Smart Contract Account (SCA), so the pool checks `balanceOf(msg.sender) > 0` on each call.
+- Alternative mode (supported in design): The pool checks `balanceOf(SCA.owner()) > 0` if SBT cannot be minted to SCAs.
+- Optional strict recipient mode (design): Require the `recipient` to also hold the SBT for demo compliance.
 
-### 1. Clone the repo, deploy the basic smart contract version, and perform a test transfer.
-setup:
+Details: See `docs/requirements.md`, `docs/high-level-design.md`, and `docs/detailed-design.md`.
+
+---
+
+## Network and Assets
+
+- Network: JSC Kaigan testnet
+  - chainId: `5278000`
+  - native gas token: `JETH`
+- Stablecoin: `MJPY` on Kaigan — `0x115e91ef61ae86FbECa4b5637FD79C806c331632`
+
+---
+
+## Repository Structure
+
+- `contracts/SmartAccount.sol` — Minimal SCA with EIP‑712 execute and nonce.
+- `contracts/PrivacyPool.sol` — SBT‑gated pool with fixed denominations, nullifier set, and ZK verification hook.
+- `contracts/IVerifierGroth16.sol` — Verifier interface expected by the pool.
+- `contracts/CompliantERC20.sol` — Sample ERC20 (for workshop/fallback).
+- `scripts/*.ts` — Deployment and helper scripts (SCA, PrivacyPool, root publishing, ERC20 workshop scripts).
+- `docs/*.md` — Requirements, high‑level design, detailed design with Mermaid sequences.
+
+---
+
+## Prerequisites
+
+- Node.js 22 (see `.nvmrc`)
+- Hardhat and an RPC token/URL for Kaigan
+- A funded testnet account for gas (JETH)
+
+---
+
+## Setup
 
 ```bash
 npm install
 cp .env.example .env
-# then edit .env with your keys
-```
-deploy:
-```bash
-npm run compile
-npm run deploy:all:kaigan
- # add the deployed contract address to .env
-```
-transfer:
-```bash
-npm run getBalance:kaigan
-npm run transfer:kaigan
+# Edit .env with your keys and addresses
 ```
 
-> ⚠️ You will not be able to use `npm run mint:kaigan` yet, as the public mint function on the ERC20 contract will be implemented during the workshop.
-
-### 2. Implement Mizuhiki and access manager into the `CompliantERC20.sol` smart contract
-To see the code to be implemented during the workshop check the `eth-tokyo-25-workshop` branch
-
-### 3. Deploy the updated smart contract from a verified address, test mint and transfer
-deploy:
-```bash
-npm run compile
-npm run deploy:all:kaigan
- # add the deployed contract address to .env
-```
-transfer:
-```bash
-npm run getBalance:kaigan
-npm run mint:kaigan
-npm run transfer:kaigan
-```
-During the mint and transfer steps, the first transaction will be successful and the second will fail due to missing Mizuhiki Verified SBT.
-
----
-
-## 📦 What's Included
-
-- `AccessManager.sol`: Role-based access manager contract
-- `CompliantERC20.sol`: ERC20 token with mint, Mizuhiki Verified SBT check and role-based access
-  All contracts use [OpenZeppelin 5.x](https://docs.openzeppelin.com/contracts/5.x/) and are designed to be simple starting points for working with **Japan Smart Chain**.
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js v22 (`.nvmrc` provided)
-- [Hardhat](https://hardhat.org/)
-- Private key with testnet funds
-
-### Setup
-
-```bash
-npm install
-cp .env.example .env
-# then edit .env with your keys
-```
-
-### Compile
-
-```bash
-npm run compile
-```
-
-### Deploy
-
-```bash
-# Local Hardhat network
-npm run deploy:all:hardhat
-
-# Kaigan testnet (Japan Smart Chain)
-npm run deploy:all:kaigan
-
-```
-
-### Test tranfer, mint
-
-Once the contracts have been deployed, the `ERC20_CONTRACT_ADDRESS` should be updated in the `.env` with your own ERC20 contract address on Kaigan.
-
-The following scripts are available to use for minting, checking ERC20 token balance of an address, or minting.
-
-```
-npm run mint:kaigan
-npm run getBalance:kaigan
-npm run transfer:kaigan
-```
-
----
-
-## 📂 Contracts
-
-- `AccessManager.sol`: Access control solution for smart contracts
-- `CompliantERC20.sol`: ERC20 with roles, mint, SBT based compliance enforcement
-- `MizuhikiVerified.sol`: Interface for implementing Mizuhiki Verified SBT check before regulated activity
-
-## Addresses to test transfer and minting
-
-You can use these addresses to test minting and transfer of the Compliant ERC20 token to an address without he Mizuhiki Verified Token, and with the Mizuhiki Verified Token. Note that the sender/minter also needs to have the Mizuhiki Verified Token in order for the transfer to success.
-
-- Without the Mizuhiki Verified Token: `0x668C380cd31b8508Bb59891feA284e4693F1cA9D`
-- With the Mizuhiki Verified Token: `0x6DDEcf986AEF2fdd49E41F7EDFE70331BDB42b1F`
-
-## 🧰 Other Commands
-
-```bash
-npm run compile     # Compile contracts
-npm run lint        # Lint TypeScript
-npm run lint:sol    # Lint Solidity
-npm run coverage    # Show test coverage
-npm run node        # Start local Hardhat node
-```
-
----
-
-## 🌐 Supported Networks
-
-- `hardhat` (local dev)
-- `kaigan` (JSC Kaigan testnet — chainId `5278000`, native gas token **JETH**)
-
----
-
-## 🔐 Environment Variables (`.env`)
+Environment variables (`.env`):
 
 ```env
-# Required: deploy contracts and mint tokens
-PRIVATE_KEY=your_private_key_here
+# Required for deployments
+PRIVATE_KEY=your_private_key
+JSC_RPC_KEY=YOUR_JSC_RPC_ENDPOINT_OR_TOKEN
+# Format: either a full URL or a token.
+# If token is provided, Hardhat constructs:
+#   https://rpc.kaigan.jsc.dev/rpc?token=${JSC_RPC_KEY}
 
-# Required: RPC endpoint
-JSC_RPC_KEY=YOUR_JSC_RPC_ENDPOINT
+# Mizuhiki SBT on Kaigan
+SBT_CONTRACT_ADDRESS=0xYourMizuhikiSbt
 
-# Required: Mizuhiki Verified SBT contract address
-SBT_CONTRACT_ADDRESS=SBT_ADDRESS
+# Optional defaults for deploy utilities
+OWNER_ADDRESS=0xOwner
+ERC20_TOKEN_ADDRESS=0x115e91ef61ae86FbECa4b5637FD79C806c331632 # MJPY
+VERIFIER_ADDRESS=0xVerifier # must implement IVerifierGroth16
+DENOMS_UNITS=1,10,100
+ERC20_DECIMALS=18
+INCLUSION_DELAY_BLOCKS=20
+PRIVACY_POOL_ADDRESS=0xPool
 ```
+
+---
+
+## Build and Compile
+
+```bash
+npm run compile
+```
+
+---
+
+## Deploy: SmartAccount and PrivacyPool
+
+Compile first, then deploy.
+
+```bash
+# Deploy SmartAccount (SCA). Owner defaults to deployer.
+OWNER_ADDRESS=0xYourOwner npm run deploy:sca:kaigan
+
+# Option A) Deploy a mock verifier for Demo Mode
+npm run deploy:verifier:kaigan
+
+# Deploy PrivacyPool using MJPY by default.
+# Required: SBT_CONTRACT_ADDRESS, VERIFIER_ADDRESS (use the mock address for demo)
+SBT_CONTRACT_ADDRESS=0xSbt VERIFIER_ADDRESS=0xVerifier \
+DENOMS_UNITS="1,10,100" INCLUSION_DELAY_BLOCKS=20 \
+npm run deploy:pool:kaigan
+
+# Build a demo association root from Deposit events
+PRIVACY_POOL_ADDRESS=0xPool npm run build:root:kaigan
+
+# Or publish a specific root directly
+PRIVACY_POOL_ADDRESS=0xPool ROOT=0xYourRoot npm run publish:root:kaigan
+```
+
+Notes:
+- The verifier must implement `IVerifierGroth16.verifyProof(bytes, uint256[]) → bool`.
+- For a quick demo without circuits, deploy a mock verifier that always returns true (not included here) and mark the build as “Demo Mode”.
+
+---
+
+## CLI Demo (No Frontend)
+
+This repo ships contracts and deploy scripts. A minimal dApp is described in `docs`, but you can exercise the core flow from the Hardhat console.
+
+1) Deploy SCA and Pool (above) and fund the SCA with `MJPY`.
+2) From the Hardhat console, approve and deposit via SCA execute:
+
+```ts
+// npx hardhat console --network kaigan
+const [signer] = await ethers.getSigners();
+const sca = await ethers.getContractAt("SmartAccount", "0xYourSCA");
+const pool = await ethers.getContractAt("PrivacyPool", "0xYourPool");
+const mjpy = await ethers.getContractAt("IERC20", "0x115e91ef61ae86FbECa4b5637FD79C806c331632");
+
+// 1. Approve via SCA.execute (build calldata off-chain in a script in production)
+let data = mjpy.interface.encodeFunctionData("approve", [pool.target, ethers.parseUnits("1", 18)]);
+let req = { to: mjpy.target, value: 0n, data, nonce: (await sca.nonce()), chainId: (await ethers.provider.getNetwork()).chainId };
+// Sign EIP712 off-chain in a real client; here assume signer is owner and call execute directly for demo
+await sca.connect(signer).execute(req, "0x"); // For demo only if execute allows direct owner calls; otherwise pre-sign
+
+// 2. Deposit via SCA.execute
+const commitment = "0x"+"11".padEnd(64,"0");
+data = pool.interface.encodeFunctionData("deposit", [ethers.parseUnits("1", 18), commitment]);
+req = { to: pool.target, value: 0n, data, nonce: (await sca.nonce()), chainId: (await ethers.provider.getNetwork()).chainId };
+await sca.connect(signer).execute(req, "0x");
+```
+
+3) Publish a root and then withdraw similarly (requires verifier and proof inputs).
+
+---
+
+## Demo Video / Slides
+
+- Video (≤ 3 minutes): TODO add link
+- Slides: TODO add link
+
+---
+
+## Threat Model (Brief)
+
+- Protects: On-chain linkability between deposit and withdraw (fixed denominations, fresh recipients), double-spend via nullifiers.
+- Does not protect: Global timing analysis, network-level metadata, or off-chain correlation.
+- No PII on-chain: Only SBT gating facts and pool events are on-chain.
+
+---
+
+## Compliance Note
+
+- Compliance: The pool blocks non‑KYC usage by requiring the Mizuhiki SBT at call time.
+- Privacy: ZK membership proofs break naive linkability while keeping denominations fixed for simplicity.
+- Optional strict recipient mode ensures both sides are KYC’d for regulated contexts.
+
+---
+
+## Next Steps
+
+- Implement strict recipient SBT enforcement flag in `PrivacyPool` (demo‑default).
+- Add owner()-fallback enforcement option for SBT checks.
+- Add real Groth16 circuits, keys, verifier adapter, and proof CLI.
+- Build the minimal web dApp (gate, deposit, withdraw, audit view) per `docs`.
+
+---
+
+## Team
+
+- Name — Role — handle
+- Name — Role — handle
+- Name — Role — handle
+
+---
+
+## Supported Networks
+
+- `hardhat` (local dev)
+- `kaigan` (JSC Kaigan testnet — chainId `5278000`, native gas token `JETH`)
