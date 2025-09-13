@@ -134,7 +134,7 @@ npm run node        # Start local Hardhat node
 ## 🌐 Supported Networks
 
 - `hardhat` (local dev)
-- `kaigan` (JSC testnet)
+- `kaigan` (JSC Kaigan testnet — chainId `5278000`, native gas token **JETH**)
 
 ---
 

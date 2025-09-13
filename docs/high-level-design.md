@@ -24,6 +24,7 @@ Components:
 - Privacy Pool: Accepts fixed-denomination deposits, records commitments, verifies ZK proofs on withdraw, enforces SBT gating and nullifier set.
 - Verifier (ZK): Groth16 verifier contract generated from Circom circuits.
 - Stablecoin (ERC20): **MJPY** on Kaigan for deposits/withdrawals; address `0x115e91ef61ae86FbECa4b5637FD79C806c331632`. If contingencies arise, a minimal ERC20 demo token can be deployed as fallback.
+- Network parameters: Chain ID `5278000`; native gas token **JETH**.
 - Mizuhiki Verified SBT (external): ERC-721 on JSC Kaigan used for KYC gating.
 - Association Set Builder: Simple off-chain worker that collects SBT-qualified deposits and maintains the Merkle tree; publishes on-chain root and off-chain JSON.
 - Optional Prover Service: Local in-browser proving by default; optional lightweight node/worker fallback (no PII, proof inputs are local or encrypted in transit if used).
@@ -163,7 +164,7 @@ Audit View:
 
 ## 11. Deployment Plan (Kaigan)
 
-- Network: JSC Kaigan testnet.
+- Network: JSC Kaigan testnet (chainId `5278000`, native token **JETH**).
 - Addresses: Add post-deploy (SCA template, PrivacyPool, Verifier, SBT). Stablecoin: **MJPY** `0x115e91ef61ae86FbECa4b5637FD79C806c331632`.
 - Verification: Verify contracts in the Kaigan explorer; link from README.
 - Config: `.env`/config.ts with RPC, chainId, addresses.

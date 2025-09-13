@@ -221,7 +221,7 @@ Demo Mode:
 
 ## 7. Configuration & Parameters
 
-- Network: JSC Kaigan (chainId: 5278000).
+- Network: JSC Kaigan (chainId: 5278000). Native gas token: JETH.
 - Contracts:
   - `MIZUHIKI_SBT_ADDRESS`: Provided by Mizuhiki on Kaigan.
   - `ERC20_TOKEN_ADDRESS`: **MJPY** `0x115e91ef61ae86FbECa4b5637FD79C806c331632`.
@@ -232,6 +232,7 @@ Demo Mode:
   - `DENOMINATIONS`: e.g., `[0.1, 1, 10]` in token units; on‑chain as integer wei.
   - `INCLUSION_DELAY_BLOCKS`: e.g., `20`.
   - `STRICT_RECIPIENT_MODE`: true in demo build.
+  - Gas token: **JETH** for transaction fees on Kaigan.
 
 ---
 
@@ -294,3 +295,142 @@ Order:
 - Multi‑asset support; dynamic denominations.
 - More robust, trust‑minimized association root updates.
 - Alternative circuits (Plonkish/UltraPlonk) via Noir/Barretenberg if time allows.
+
+---
+
+## 13. How It Works — Mermaid Sequences
+
+The following sequence diagrams illustrate the end‑to‑end flows. The default demo assumes the SBT is bound to the SCA (preferred). Where relevant, we note the EOA‑owner fallback option.
+
+### 13.1 Onboarding and SBT Gate
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant D as Web dApp
+    participant MM as MetaMask
+    participant SBT as Mizuhiki SBT
+    participant SCA as SmartAccount
+
+    U->>D: Open dApp and connect wallet
+    D->>MM: eth_requestAccounts
+    MM-->>D: return account
+    D->>D: Check Mizuhiki SBT gate
+    D->>SBT: balanceOf subject address
+    SBT-->>D: SBT balance value
+    alt Has SBT
+        D->>MM: Deploy SmartAccount transaction
+        MM->>SCA: Deploy SmartAccount with owner
+        SCA-->>D: SmartAccount address
+        D-->>U: Ready and linked
+    else Missing SBT
+        D-->>U: Show gate screen and SBT link
+    end
+```
+
+Notes:
+- Preferred: SBT is minted/bound to SCA. Fallback: Pool checks SCA.owner() holds SBT.
+- All later state‑changing interactions use SCA `execute()` with EIP‑712 signatures.
+
+### 13.2 Deposit (Fixed Denomination)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant D as Web dApp
+    participant MM as MetaMask
+    participant SCA as SmartAccount
+    participant Pool as PrivacyPool
+    participant MJPY as MJPY ERC20
+    participant SBT as Mizuhiki SBT
+
+    U->>D: Select denomination
+    D->>D: Create note and commitment
+
+    U->>MM: Send MJPY to SCA
+    MM->>MJPY: transfer to SCA
+    MJPY-->>SCA: Balance increased
+
+    D->>MM: Sign EIP712 approve
+    MM-->>D: Signature ready
+    D->>SCA: execute approve for Pool
+    SCA->>MJPY: approve Pool for amount
+    MJPY-->>SCA: Allowance set
+
+    D->>MM: Sign EIP712 deposit
+    MM-->>D: Signature ready
+    D->>SCA: execute deposit to Pool
+    SCA->>Pool: deposit amount and commitment
+    Pool->>SBT: check balanceOf SCA
+    SBT-->>Pool: Verified
+    Pool->>MJPY: transferFrom SCA to Pool
+    MJPY-->>Pool: Tokens received
+    Pool-->>D: Deposit event
+    D-->>U: Note stored and explorer link
+```
+
+Notes:
+- Funding step can be automated or batched; for MVP it’s explicit.
+- If using EOA‑owner fallback, Pool checks `balanceOf(SCA.owner())` instead of `balanceOf(SCA)`.
+
+### 13.3 Association Root Publish (Off‑Chain Builder)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant ASB as Association Set Builder
+    participant Pool as PrivacyPool
+    participant IPFS as IPFS JSON
+
+    ASB->>Pool: Scan Deposit events
+    ASB->>ASB: Recompute Merkle tree and root
+    ASB->>IPFS: Pin association set JSON
+    ASB->>Pool: publishAssociationRoot with root
+    Pool-->>ASB: AssociationRootUpdated event
+```
+
+Notes:
+- UI shows countdown until `rootPublishedAt[root] + inclusionDelayBlocks` to improve anonymity.
+
+### 13.4 Withdraw (Private Spend)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant D as Web dApp
+    participant MM as MetaMask
+    participant SCA as SmartAccount
+    participant Pool as PrivacyPool
+    participant Verif as Groth16 Verifier
+    participant SBT as Mizuhiki SBT
+    participant MJPY as MJPY ERC20
+
+    D->>D: Build Merkle path from association set JSON
+    D->>D: Generate Groth16 proof and signals
+
+    D->>MM: Sign EIP712 withdraw
+    MM-->>D: Signature ready
+    D->>SCA: execute withdraw to Pool
+    SCA->>Pool: withdraw request
+    Pool->>SBT: check balanceOf SCA
+    SBT-->>Pool: Verified
+    opt Strict recipient mode
+        Pool->>SBT: check balanceOf recipient
+        SBT-->>Pool: Verified
+    end
+    Pool->>Verif: verify proof and signals
+    Verif-->>Pool: OK
+    Pool->>Pool: Ensure nullifier unused
+    Pool->>Pool: Mark nullifier used
+    Pool->>MJPY: Transfer to recipient
+    MJPY-->>recipient: Balance increased
+    Pool-->>D: Withdraw event
+    D-->>U: Success and explorer links
+```
+
+Notes:
+- Gas for transactions is paid in **JETH** on Kaigan.
+- If the proof fails or root not yet eligible, the tx reverts; UI surfaces the precise error.

@@ -3,7 +3,7 @@
 > **This document is requirements-only, intentionally detailed so an engineer with *no prior context* can implement the MVP without ambiguity.**
 >
 > **Form factor:** Web dApp (desktop or mobile **browser**) + **MetaMask**. No native apps.
-> **Network:** **JSC Kaigan testnet** (Ethereum-compatible).
+> **Network:** **JSC Kaigan testnet** (Ethereum-compatible). Chain ID: `5278000`. Native gas token: **JETH**.
 > **Stablecoin (MVP):** **MJPY** on Kaigan at `0x115e91ef61ae86FbECa4b5637FD79C806c331632`.
 > **Core idea:** **Only KYC’d users** (holders of **Mizuhiki Verified SBT**) can access a **Privacy Pool** through a **Smart Contract Account (SCA)** with a simple, guided UX.
 
@@ -59,7 +59,7 @@ A **browser wallet** for **Mizuhiki‑verified** users to make **privacy‑prese
 ## 3) Scope (MVP)
 
 * **Network:** JSC Kaigan testnet only.
-* **Assets:** 1 stablecoin (MJPY at `0x115e91ef61ae86FbECa4b5637FD79C806c331632`) + native gas token.
+* **Assets:** 1 stablecoin (MJPY at `0x115e91ef61ae86FbECa4b5637FD79C806c331632`) + native gas token (**JETH**).
 * **Denominations:** 1–3 fixed (e.g., 0.1 / 1 / 10).
 * **SCA:** Single owner, signature check, nonce/replay protection; optional single‑guardian timelocked recovery (demo only).
 * **Gate:** SBT required for deposit, proof, withdraw; deny otherwise.
