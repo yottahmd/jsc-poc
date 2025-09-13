@@ -4,6 +4,7 @@
 >
 > **Form factor:** Web dApp (desktop or mobile **browser**) + **MetaMask**. No native apps.
 > **Network:** **JSC Kaigan testnet** (Ethereum-compatible).
+> **Stablecoin (MVP):** **MJPY** on Kaigan at `0x115e91ef61ae86FbECa4b5637FD79C806c331632`.
 > **Core idea:** **Only KYC’d users** (holders of **Mizuhiki Verified SBT**) can access a **Privacy Pool** through a **Smart Contract Account (SCA)** with a simple, guided UX.
 
 ---
@@ -58,7 +59,7 @@ A **browser wallet** for **Mizuhiki‑verified** users to make **privacy‑prese
 ## 3) Scope (MVP)
 
 * **Network:** JSC Kaigan testnet only.
-* **Assets:** 1 stablecoin + native gas token.
+* **Assets:** 1 stablecoin (MJPY at `0x115e91ef61ae86FbECa4b5637FD79C806c331632`) + native gas token.
 * **Denominations:** 1–3 fixed (e.g., 0.1 / 1 / 10).
 * **SCA:** Single owner, signature check, nonce/replay protection; optional single‑guardian timelocked recovery (demo only).
 * **Gate:** SBT required for deposit, proof, withdraw; deny otherwise.
@@ -182,7 +183,7 @@ A **browser wallet** for **Mizuhiki‑verified** users to make **privacy‑prese
 
 ## 8) Interoperability & Extensibility
 
-* **I1.** Support at least **one testnet stablecoin** on **JSC Kaigan**. If unavailable, deploy a minimal ERC20 test stablecoin for the demo.
+* **I1.** Use **MJPY** on **JSC Kaigan** at `0x115e91ef61ae86FbECa4b5637FD79C806c331632`. If contingencies require, fall back to a minimal demo ERC20.
 * **I2.** Clear path to add denominations/assets later (config-driven).
 * **I3.** Abstract SBT check to support alternative compliant ID tokens in future.
 
@@ -191,6 +192,7 @@ A **browser wallet** for **Mizuhiki‑verified** users to make **privacy‑prese
 ## 9) Assumptions & Constraints
 
 * Mizuhiki Verified SBT is deployed on **JSC Kaigan testnet** and queryable via ERC‑721 `balanceOf`.
+* **MJPY** is available at `0x115e91ef61ae86FbECa4b5637FD79C806c331632`.
 * Test users can receive SBTs (faucet/allowlist) before judging.
 * Privacy depends on **anonymity set**; run **mixer windows** during the demo to aggregate deposits.
 
@@ -231,7 +233,7 @@ A **browser wallet** for **Mizuhiki‑verified** users to make **privacy‑prese
 * ✅ **README**: one‑sentence summary, how **Mizuhiki Verified SBT** is used, quickstart, setup & testing instructions, **demo script**, threat model, compliance note, known limits, **next steps**.
 * ✅ **Live demo** on **JSC Kaigan testnet** or reproducible local script; **E2E test** covering A1–A5.
 * ✅ **Short demo video** (≤3 min preferred) showing the happy path + gate behavior, or slide deck.
-* ✅ **Deployed contract addresses** (testnet), verified in explorer.
+* ✅ **Deployed contract addresses** (testnet), verified in explorer — include **MJPY** address `0x115e91ef61ae86FbECa4b5637FD79C806c331632`.
 * ✅ **Association set root** publication method and sample JSON (IPFS link or static file).
 * ✅ **Team Summary**: short description of each member and role.
 * ✅ **Network config**: chainId and RPC for **JSC Kaigan**, explorer links.

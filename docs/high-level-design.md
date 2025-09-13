@@ -23,7 +23,7 @@ Components:
 - Smart Contract Account (SCA): Minimal single-owner account with signature + nonce enforcement; optionally a timelocked guardian for demo.
 - Privacy Pool: Accepts fixed-denomination deposits, records commitments, verifies ZK proofs on withdraw, enforces SBT gating and nullifier set.
 - Verifier (ZK): Groth16 verifier contract generated from Circom circuits.
-- Stablecoin (ERC20): Test token used for deposits/withdrawals. If Kaigan stablecoin is not available, a minimal ERC20 demo token is deployed (sample added in repo).
+- Stablecoin (ERC20): **MJPY** on Kaigan for deposits/withdrawals; address `0x115e91ef61ae86FbECa4b5637FD79C806c331632`. If contingencies arise, a minimal ERC20 demo token can be deployed as fallback.
 - Mizuhiki Verified SBT (external): ERC-721 on JSC Kaigan used for KYC gating.
 - Association Set Builder: Simple off-chain worker that collects SBT-qualified deposits and maintains the Merkle tree; publishes on-chain root and off-chain JSON.
 - Optional Prover Service: Local in-browser proving by default; optional lightweight node/worker fallback (no PII, proof inputs are local or encrypted in transit if used).
@@ -164,7 +164,7 @@ Audit View:
 ## 11. Deployment Plan (Kaigan)
 
 - Network: JSC Kaigan testnet.
-- Addresses: To be added post-deploy (SCA template, PrivacyPool, Verifier, ERC20 demo or official stablecoin, SBT contract address).
+- Addresses: Add post-deploy (SCA template, PrivacyPool, Verifier, SBT). Stablecoin: **MJPY** `0x115e91ef61ae86FbECa4b5637FD79C806c331632`.
 - Verification: Verify contracts in the Kaigan explorer; link from README.
 - Config: `.env`/config.ts with RPC, chainId, addresses.
 
@@ -202,4 +202,3 @@ Audit View:
 - Modern cryptography: Groth16 ZK membership proofs for privacy and nullifier correctness.
 - Seamless UX: simple gates, clear states, tutorial, fresh-address guidance.
 - Real-world utility: KYC-gated privacy pool addressing correlational privacy without violating compliance.
-
