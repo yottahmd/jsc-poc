@@ -300,7 +300,7 @@ Order:
 
 ## 13. How It Works — Mermaid Sequences
 
-The following sequence diagrams illustrate the end‑to‑end flows. The default demo assumes the SBT is bound to the SCA (preferred). Where relevant, we note the EOA‑owner fallback option.
+The following sequence diagrams illustrate the end‑to‑end flows. Enforcement is owner‑checked on Kaigan: the pool checks `balanceOf(SCA.owner()) > 0`.
 
 ### 13.1 Onboarding and SBT Gate
 
@@ -330,7 +330,7 @@ sequenceDiagram
 ```
 
 Notes:
-- Preferred: SBT is minted/bound to SCA. Fallback: Pool checks SCA.owner() holds SBT.
+- Enforcement is owner‑checked: Pool checks `IERC721(sbt).balanceOf(SCA.owner()) > 0`. SBTs are not minted to SCAs.
 - All later state‑changing interactions use SCA `execute()` with EIP‑712 signatures.
 
 ### 13.2 Deposit (Fixed Denomination)
@@ -363,7 +363,7 @@ sequenceDiagram
     MM-->>D: Signature ready
     D->>SCA: execute deposit to Pool
     SCA->>Pool: deposit amount and commitment
-    Pool->>SBT: check balanceOf SCA
+    Pool->>SBT: check balanceOf SCA.owner
     SBT-->>Pool: Verified
     Pool->>MJPY: transferFrom SCA to Pool
     MJPY-->>Pool: Tokens received
@@ -373,7 +373,6 @@ sequenceDiagram
 
 Notes:
 - Funding step can be automated or batched; for MVP it’s explicit.
-- If using EOA‑owner fallback, Pool checks `balanceOf(SCA.owner())` instead of `balanceOf(SCA)`.
 
 ### 13.3 Association Root Publish (Off‑Chain Builder)
 
@@ -415,7 +414,7 @@ sequenceDiagram
     MM-->>D: Signature ready
     D->>SCA: execute withdraw to Pool
     SCA->>Pool: withdraw request
-    Pool->>SBT: check balanceOf SCA
+    Pool->>SBT: check balanceOf SCA.owner
     SBT-->>Pool: Verified
     opt Strict recipient mode
         Pool->>SBT: check balanceOf recipient

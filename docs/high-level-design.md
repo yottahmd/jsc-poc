@@ -30,18 +30,17 @@ Components:
 - Optional Prover Service: Local in-browser proving by default; optional lightweight node/worker fallback (no PII, proof inputs are local or encrypted in transit if used).
 
 Interaction Summary:
-1) User connects MetaMask → dApp checks SBT → if verified, user deploys/links SCA.
-2) Deposit: SCA calls pool.deposit(denom, commitment), pool enforces SBT gating and records commitment.
-3) After inclusion delay, user withdraws: dApp generates Groth16 proof → SCA calls pool.withdraw(proof, nullifier, recipient), pool verifies proof, checks SBT, enforces nullifier uniqueness, transfers denomination.
+1) User connects MetaMask → dApp checks SBT on `SCA.owner()` → if verified, user deploys/links SCA.
+2) Deposit: SCA calls pool.deposit(denom, commitment); pool enforces SBT gating against `SCA.owner()` and records commitment.
+3) After inclusion delay, user withdraws: dApp generates Groth16 proof → SCA calls pool.withdraw(...); pool verifies proof, checks SBT on `SCA.owner()`, enforces nullifier uniqueness, and transfers denomination.
 4) Audit View: dApp shows current association Merkle root (on-chain) and link to full set JSON (IPFS/static).
 
 ---
 
 ## 3. SBT Gating Design
 
-Enforcement Modes (both supported; pick preferred at deploy time):
-- Preferred: SCA-bound SBT — SBT is minted/bound to SCA address; pool checks `IERC721(sbt).balanceOf(msg.sender) > 0`.
-- Alternative: Owner-checked — SCA exposes immutable `owner()`; pool checks `IERC721(sbt).balanceOf(SCA.owner()) > 0`.
+Enforcement Model (Kaigan policy):
+- Owner-checked — SCA exposes immutable `owner()`; pool checks `IERC721(sbt).balanceOf(SCA.owner()) > 0`. SBTs are not minted to SCAs.
 
 Rules:
 - Never use `tx.origin`.
@@ -49,7 +48,7 @@ Rules:
 - No admin bypass; all gates are enforced in-contract.
 
 Trade-offs:
-- SCA-bound SBT yields simpler checks and transferability of control to the SCA identity. If Mizuhiki policy can’t mint to SCAs, use owner-check fallback.
+- Owner-checked ties compliance to the human owner of the SCA. This matches Mizuhiki SBT policy and keeps pool logic simple and auditable.
 
 ---
 

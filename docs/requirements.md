@@ -37,10 +37,7 @@ A **Privacy Pool** lets users **deposit** assets and later **withdraw** (or priv
 
 ## 1) Non‑Negotiable Principles (Do NOT violate)
 
-1. **SBT Gate Always-On:** Every deposit / proof / withdraw call **must** verify that the **effective actor** holds the **Mizuhiki Verified SBT** *at call time*. Enforcement modes:
-   - Preferred: the user’s **Smart Contract Account (SCA) holds the SBT** (SBT minted/bound to SCA address), so pool checks `IERC721(sbt).balanceOf(msg.sender) > 0`.
-   - Alternative: SCA exposes an immutable `owner()`; pool checks `IERC721(sbt).balanceOf(SCA.owner()) > 0`.
-   - Never rely on `tx.origin` for gate decisions. No backdoors. No admin bypass.
+1. **SBT Gate Always-On:** Every deposit / proof / withdraw call **must** verify that the **SCA owner** holds the **Mizuhiki Verified SBT** *at call time* by checking `IERC721(sbt).balanceOf(SCA.owner()) > 0`. Never rely on `tx.origin`. No backdoors. No admin bypass. SBTs are never minted to SCAs.
 2. **No PII On-Chain:** The system records **only** the fact that SBT was required and used; **never** store names, emails, hashes of documents, etc.
 3. **Smart Account Authorization:** All state-changing calls through the SCA **must** enforce **owner signature** + **nonce** (replay protection). No function may proceed without explicit authorization.
 4. **Fixed Denominations:** The MVP supports **1–3 fixed amounts** (e.g., 0.1 / 1 / 10). Arbitrary amounts are out of scope.
@@ -71,11 +68,11 @@ A **browser wallet** for **Mizuhiki‑verified** users to make **privacy‑prese
 
 ### 4.1 Onboarding (Wallet Connect + Gate)
 
-**Preconditions:** User has MetaMask; optionally already holds Mizuhiki SBT on **JSC Kaigan testnet**.
+**Preconditions:** User has MetaMask; the SCA owner EOA holds Mizuhiki SBT on **JSC Kaigan testnet**.
 **Steps:**
 
 1. User opens dApp → clicks **Connect Wallet**.
-2. dApp reads user address → **checks SBT ownership** via on-chain call.
+2. dApp reads user address → **checks SBT ownership** of the SCA owner via on-chain call.
 3. If **no SBT**, show a **Gate Screen**: explain SBT, why needed, and how to obtain a test SBT (faucet/allowlist link).
 4. If **has SBT**, enable **Create/Link Smart Account (SCA)** button.
 5. User creates/links SCA (1 tx). On success, show SCA address and **Ready** state.
@@ -114,8 +111,8 @@ A **browser wallet** for **Mizuhiki‑verified** users to make **privacy‑prese
 
 ### 5.1 Access Control (Mizuhiki SBT)
 
-* **R1.** On connect, dApp calls the **Mizuhiki Verified SBT** (ERC-721 on **JSC Kaigan**) to confirm `balanceOf(subject) > 0` where `subject` is the SCA address (preferred) or `SCA.owner()`.
-* **R2.** Contract methods `deposit`, `prove`, `withdraw` **require** SBT at **call time**, using the selected enforcement mode above.
+* **R1.** On connect, dApp calls the **Mizuhiki Verified SBT** (ERC-721 on **JSC Kaigan**) to confirm `balanceOf(SCA.owner()) > 0`.
+* **R2.** Contract methods `deposit`, `prove`, `withdraw` **require** SBT at **call time**, by checking `balanceOf(subject)` where `subject = SCA.owner()` (or `msg.sender` if directly using an EOA).
 * **R3.** Failure messages must be human-readable: e.g., `Access denied: Mizuhiki Verified SBT required`.
 
 ### 5.2 Smart Contract Account (Authorization)

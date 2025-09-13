@@ -8,10 +8,9 @@ This project targets the ETHTokyo’25 Japan Smart Chain sponsor bounty. It demo
 
 ## How We Use Mizuhiki Verified SBT
 
-- Gate on‑chain access: Both `deposit` and `withdraw` require the caller to hold the Mizuhiki Verified SBT on JSC Kaigan.
-- Preferred mode: The SBT is held by the user’s Smart Contract Account (SCA), so the pool checks `balanceOf(msg.sender) > 0` on each call.
-- Alternative mode (supported in design): The pool checks `balanceOf(SCA.owner()) > 0` if SBT cannot be minted to SCAs.
-- Optional strict recipient mode (design): Require the `recipient` to also hold the SBT for demo compliance.
+- Gate on‑chain access: Both `deposit` and `withdraw` require the SCA owner to hold the Mizuhiki Verified SBT on JSC Kaigan.
+- Enforcement: The pool checks `IERC721(sbt).balanceOf(SCA.owner()) > 0` at call time (if an EOA calls directly, `msg.sender` is used).
+- Optional strict recipient mode: Require the `recipient` to also hold the SBT for demo compliance.
 
 Details: See `docs/requirements.md`, `docs/high-level-design.md`, and `docs/detailed-design.md`.
 
@@ -99,6 +98,8 @@ PRIVACY_POOL_ADDRESS=0xPool
 | `SBT_CONTRACT_ADDRESS` | Yes | — | Mizuhiki Verified SBT on Kaigan (gates pool access). | `0x606F72657e72cd1218444C69eF9D366c62C54978` |
 | `ERC20_TOKEN_ADDRESS` | Yes | MJPY | ERC20 used by the pool. On Kaigan, MJPY address. | `0x115e91ef61ae86FbECa4b5637FD79C806c331632` |
 | `VERIFIER_ADDRESS` | Yes | — | Address of the on-chain ZK verifier implementing `IVerifierGroth16`. | `0xVerifier...` |
+| `GATE_MODE` | No | `owner` | Enforcement mode: `caller` = SCA must hold SBT; `owner` = check `owner()` of caller if present, else `msg.sender`. | `owner` |
+| `STRICT_RECIPIENT` | No | `1` | If `1`, require recipient to hold SBT on withdraw (demo-default). | `1` |
 | `OWNER_ADDRESS` | No | Deployer | Owner for SmartAccount/PrivacyPool deployments. | `0xOwner...` |
 | `DENOMS_UNITS` | No | `1,10,100` | Comma-separated denomination amounts in whole-token units. | `"1,10,100"` |
 | `ERC20_DECIMALS` | No | `18` | ERC20 decimals for denomination parsing. | `18` |
@@ -125,8 +126,11 @@ OWNER_ADDRESS=0xYourOwner npm run deploy:sca:kaigan
 
 # Deploy PrivacyPool using MJPY by default.
 # Required: SBT_CONTRACT_ADDRESS, VERIFIER_ADDRESS
+# Optional enforcement flags:
+#   GATE_MODE=caller|owner (default owner)
+#   STRICT_RECIPIENT=1|0 (default 1)
 SBT_CONTRACT_ADDRESS=0xSbt VERIFIER_ADDRESS=0xVerifier \
-DENOMS_UNITS="1,10,100" INCLUSION_DELAY_BLOCKS=20 \
+DENOMS_UNITS="1,10,100" INCLUSION_DELAY_BLOCKS=20 GATE_MODE=owner STRICT_RECIPIENT=1 \
 npm run deploy:pool:kaigan
 
 # Publish a specific root directly (computed off-chain)

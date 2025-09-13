@@ -9,6 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {IVerifierGroth16} from "./IVerifierGroth16.sol";
+import {IHasOwner} from "./IHasOwner.sol";
 
 /// @title PrivacyPool — Fixed-denomination, SBT-gated pool with ZK withdraws
 /// @notice Simplified MVP for hackathon: deposits emit commitments; withdraws verify proofs,
@@ -32,6 +33,11 @@ contract PrivacyPool is Ownable, ReentrancyGuard {
     // --- Nullifier set ---
     mapping(bytes32 => bool) public nullifierUsed;
 
+    // --- Gating config ---
+    enum GateMode { CallerHoldsSBT, OwnerHoldsSBT }
+    GateMode public immutable gateMode;
+    bool public immutable strictRecipient;
+
     // --- Events ---
     event Deposit(uint256 indexed denomination, bytes32 indexed commitment, uint256 timestamp);
     event Withdraw(bytes32 indexed nullifier, uint256 indexed denomination, address indexed to, uint256 timestamp);
@@ -43,7 +49,9 @@ contract PrivacyPool is Ownable, ReentrancyGuard {
         address _sbt,
         IVerifierGroth16 _verifier,
         uint256[] memory _denominations,
-        uint64 _inclusionDelayBlocks
+        uint64 _inclusionDelayBlocks,
+        GateMode _gateMode,
+        bool _strictRecipient
     ) Ownable(_owner) {
         require(address(_token) != address(0), "Pool: token zero");
         require(_sbt != address(0), "Pool: SBT zero");
@@ -55,6 +63,8 @@ contract PrivacyPool is Ownable, ReentrancyGuard {
         sbt = _sbt;
         verifier = _verifier;
         inclusionDelayBlocks = _inclusionDelayBlocks;
+        gateMode = _gateMode;
+        strictRecipient = _strictRecipient;
 
         for (uint256 i = 0; i < _denominations.length; i++) {
             isSupportedDenomination[_denominations[i]] = true;
@@ -62,8 +72,25 @@ contract PrivacyPool is Ownable, ReentrancyGuard {
     }
 
     // --- Modifiers ---
+    function subjectForGate(address caller) internal view returns (address) {
+        if (gateMode == GateMode.CallerHoldsSBT) {
+            return caller;
+        }
+        // OwnerHoldsSBT mode: try to read owner() from the caller (SCA),
+        // fallback to caller itself if call fails (EOA direct use).
+        try IHasOwner(caller).owner() returns (address o) {
+            if (o != address(0)) {
+                return o;
+            }
+            return caller;
+        } catch {
+            return caller;
+        }
+    }
+
     modifier onlySbtHolder() {
-        require(IERC721(sbt).balanceOf(msg.sender) > 0, "Pool: SBT required");
+        address subject = subjectForGate(msg.sender);
+        require(IERC721(sbt).balanceOf(subject) > 0, "Pool: SBT required");
         _;
     }
 
@@ -109,6 +136,10 @@ contract PrivacyPool is Ownable, ReentrancyGuard {
         require(block.number >= publishedAt + inclusionDelayBlocks, "Pool: root not yet eligible");
         require(!nullifierUsed[nullifier], "Pool: nullifier used");
 
+        if (strictRecipient) {
+            require(IERC721(sbt).balanceOf(recipient) > 0, "Pool: recipient lacks SBT");
+        }
+
         bool ok = verifier.verifyProof(proof, publicSignals);
         require(ok, "Pool: invalid proof");
 
@@ -117,4 +148,3 @@ contract PrivacyPool is Ownable, ReentrancyGuard {
         emit Withdraw(nullifier, denomination, recipient, block.timestamp);
     }
 }
-

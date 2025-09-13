@@ -11,6 +11,8 @@ import { ethers } from "hardhat";
  *  - DENOMS_UNITS (optional): comma-separated whole-token amounts, default "1,10,100"
  *  - ERC20_DECIMALS (optional): token decimals, default "18"
  *  - INCLUSION_DELAY_BLOCKS (optional): default "20"
+ *  - GATE_MODE (optional): "caller" or "owner" (default "owner")
+ *  - STRICT_RECIPIENT (optional): "1" to require recipient SBT (default "1")
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -23,6 +25,9 @@ async function main() {
   const owner = (process.env.OWNER_ADDRESS || deployer.address).trim();
   const decimals = parseInt(process.env.ERC20_DECIMALS || "18", 10);
   const inclusionDelayBlocks = BigInt(process.env.INCLUSION_DELAY_BLOCKS || "20");
+  const gateModeStr = (process.env.GATE_MODE || "owner").toLowerCase();
+  const gateMode = gateModeStr === "caller" ? 0 : 1; // 0=CallerHoldsSBT, 1=OwnerHoldsSBT
+  const strictRecipient = (process.env.STRICT_RECIPIENT || "1") === "1";
 
   if (!ethers.isAddress(tokenAddr)) throw new Error("ERC20_TOKEN_ADDRESS invalid");
   if (!ethers.isAddress(sbtAddr)) throw new Error("SBT_CONTRACT_ADDRESS is required and must be an address");
@@ -40,6 +45,8 @@ async function main() {
   console.log("Verifier:", verifierAddr);
   console.log("Denoms (units):", denomsUnits.join(", "));
   console.log("Inclusion delay (blocks):", inclusionDelayBlocks.toString());
+  console.log("Gate mode:", gateMode === 0 ? "caller" : "owner");
+  console.log("Strict recipient:", strictRecipient);
 
   const PrivacyPool = await ethers.getContractFactory("PrivacyPool");
   const pool = await PrivacyPool.deploy(
@@ -49,6 +56,8 @@ async function main() {
     verifierAddr,
     denoms,
     inclusionDelayBlocks,
+    gateMode,
+    strictRecipient,
   );
   await pool.waitForDeployment();
 
@@ -59,4 +68,3 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-
