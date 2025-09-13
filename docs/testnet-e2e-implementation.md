@@ -11,7 +11,7 @@ This document lists the remaining work to bridge from current repo to a complete
 - PrivacyPool
   - Enforce SBT on SCA owner (immutable):
     - `IERC721(sbt).balanceOf(SCA.owner()) > 0` at call time.
-  - Add strict recipient mode (immutable flag): require `IERC721(sbt).balanceOf(recipient) > 0` on withdraw.
+- (Optional) Strict recipient mode (immutable flag): if enabled, require `IERC721(sbt).balanceOf(recipient) > 0` on withdraw. Default OFF.
   - Keep current: fixed denominations, nullifier set, root + inclusion delay, events.
 - SmartAccount
   - Keep minimal EIP‑712 execute with `nonce` and `chainId` checks.

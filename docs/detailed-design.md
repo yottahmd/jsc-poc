@@ -416,7 +416,7 @@ sequenceDiagram
     SCA->>Pool: withdraw request
     Pool->>SBT: check balanceOf SCA.owner
     SBT-->>Pool: Verified
-    opt Strict recipient mode
+    opt Strict recipient mode (optional, default off)
         Pool->>SBT: check balanceOf recipient
         SBT-->>Pool: Verified
     end

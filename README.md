@@ -10,7 +10,7 @@ This project targets the ETHTokyo’25 Japan Smart Chain sponsor bounty. It demo
 
 - Gate on‑chain access: Both `deposit` and `withdraw` require the SCA owner to hold the Mizuhiki Verified SBT on JSC Kaigan.
 - Enforcement: The pool checks `IERC721(sbt).balanceOf(SCA.owner()) > 0` at call time (if an EOA calls directly, `msg.sender` is used).
-- Optional strict recipient mode: Require the `recipient` to also hold the SBT for demo compliance.
+- Optional strict recipient mode: Can require the `recipient` to also hold the SBT (default OFF).
 
 Details: See `docs/requirements.md`, `docs/high-level-design.md`, and `docs/detailed-design.md`.
 
@@ -99,7 +99,7 @@ PRIVACY_POOL_ADDRESS=0xPool
 | `ERC20_TOKEN_ADDRESS` | Yes | MJPY | ERC20 used by the pool. On Kaigan, MJPY address. | `0x115e91ef61ae86FbECa4b5637FD79C806c331632` |
 | `VERIFIER_ADDRESS` | Yes | — | Address of the on-chain ZK verifier implementing `IVerifierGroth16`. | `0xVerifier...` |
 | `GATE_MODE` | No | `owner` | Enforcement mode: `caller` = SCA must hold SBT; `owner` = check `owner()` of caller if present, else `msg.sender`. | `owner` |
-| `STRICT_RECIPIENT` | No | `1` | If `1`, require recipient to hold SBT on withdraw (demo-default). | `1` |
+| `STRICT_RECIPIENT` | No | `0` | If `1`, require recipient to hold SBT on withdraw (optional). | `0` |
 | `OWNER_ADDRESS` | No | Deployer | Owner for SmartAccount/PrivacyPool deployments. | `0xOwner...` |
 | `DENOMS_UNITS` | No | `1,10,100` | Comma-separated denomination amounts in whole-token units. | `"1,10,100"` |
 | `ERC20_DECIMALS` | No | `18` | ERC20 decimals for denomination parsing. | `18` |
@@ -128,9 +128,9 @@ OWNER_ADDRESS=0xYourOwner npm run deploy:sca:kaigan
 # Required: SBT_CONTRACT_ADDRESS, VERIFIER_ADDRESS
 # Optional enforcement flags:
 #   GATE_MODE=caller|owner (default owner)
-#   STRICT_RECIPIENT=1|0 (default 1)
+#   STRICT_RECIPIENT=1|0 (default 0, off)
 SBT_CONTRACT_ADDRESS=0xSbt VERIFIER_ADDRESS=0xVerifier \
-DENOMS_UNITS="1,10,100" INCLUSION_DELAY_BLOCKS=20 GATE_MODE=owner STRICT_RECIPIENT=1 \
+DENOMS_UNITS="1,10,100" INCLUSION_DELAY_BLOCKS=20 GATE_MODE=owner STRICT_RECIPIENT=0 \
 npm run deploy:pool:kaigan
 
 # Publish a specific root directly (computed off-chain)

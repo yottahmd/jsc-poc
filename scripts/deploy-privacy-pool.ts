@@ -12,7 +12,7 @@ import { ethers } from "hardhat";
  *  - ERC20_DECIMALS (optional): token decimals, default "18"
  *  - INCLUSION_DELAY_BLOCKS (optional): default "20"
  *  - GATE_MODE (optional): "caller" or "owner" (default "owner")
- *  - STRICT_RECIPIENT (optional): "1" to require recipient SBT (default "1")
+ *  - STRICT_RECIPIENT (optional): "1" to require recipient SBT (default "0")
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -27,7 +27,7 @@ async function main() {
   const inclusionDelayBlocks = BigInt(process.env.INCLUSION_DELAY_BLOCKS || "20");
   const gateModeStr = (process.env.GATE_MODE || "owner").toLowerCase();
   const gateMode = gateModeStr === "caller" ? 0 : 1; // 0=CallerHoldsSBT, 1=OwnerHoldsSBT
-  const strictRecipient = (process.env.STRICT_RECIPIENT || "1") === "1";
+  const strictRecipient = (process.env.STRICT_RECIPIENT || "0") === "1";
 
   if (!ethers.isAddress(tokenAddr)) throw new Error("ERC20_TOKEN_ADDRESS invalid");
   if (!ethers.isAddress(sbtAddr)) throw new Error("SBT_CONTRACT_ADDRESS is required and must be an address");
